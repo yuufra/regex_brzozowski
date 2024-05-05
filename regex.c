@@ -29,9 +29,12 @@ struct Token {
 
 // ノードの定義
 typedef enum {
+    ND_ALPHA,
     ND_DOT,
     ND_STAR,
-    ND_ALPHA
+    ND_OR,
+    DERIV_EMPTYSET,
+    DERIV_EPSILON
 } NodeKind;
 
 typedef struct Node Node;
@@ -53,6 +56,9 @@ int consume(char);
 int consume_dot();
 void expect(char);
 char* expect_str();
+
+Node* nullable_wrapper(Node* node);
+bool nullable(Node* node);
 
 
 Token* token;
@@ -135,13 +141,13 @@ void print_tree(Node* node, int depth){
         fprintf(stderr, "\n");
         fprintf(stderr, "%*s", 2*depth, " ");
         print_tree(node->lhs, depth+1);
-    } else {
+    } else if (node->kind == ND_DOT || node->kind == ND_OR) {
         fprintf(stderr, "\n");
         fprintf(stderr, "%*s", 2*depth, " ");
         print_tree(node->lhs, depth+1);
         fprintf(stderr, "%*s", 2*depth, " ");
         print_tree(node->rhs, depth+1);
-    }
+    } 
 }
 
 Node* new_node(NodeKind kind, Node* lhs, Node* rhs){
@@ -150,6 +156,22 @@ Node* new_node(NodeKind kind, Node* lhs, Node* rhs){
     node->kind = kind;
     node->lhs = lhs;
     node->rhs = rhs;
+
+    if (kind == ND_DOT){
+        if(lhs->kind == DERIV_EPSILON)
+            node = rhs;
+        else if (lhs->kind == DERIV_EMPTYSET)
+            node = new_node(DERIV_EMPTYSET, NULL, NULL);
+    } else if (kind == ND_OR) {
+        if(lhs->kind == DERIV_EPSILON)
+            node = new_node(DERIV_EPSILON, NULL, NULL);
+        else if (lhs->kind == DERIV_EMPTYSET)
+            node = rhs;
+        else if(rhs->kind == DERIV_EPSILON)
+            node = new_node(DERIV_EPSILON, NULL, NULL);
+        else if (rhs->kind == DERIV_EMPTYSET)
+            node = lhs;
+    }
     return node;
 }
 
@@ -235,6 +257,66 @@ char* expect_str(){
     return c;
 }
 
+Node* brzozowski_derivative(Node* node, char c){
+    if (node->kind == DERIV_EMPTYSET){
+        return new_node(DERIV_EMPTYSET, NULL, NULL);
+    } else if (node->kind == DERIV_EPSILON){
+        return new_node(DERIV_EMPTYSET, NULL, NULL);
+    }
+
+    // print_tree(node, 0);
+    // printf("%c\n", c);
+
+    Node** array = malloc(4 * sizeof(Node*));
+
+    if (node->kind == ND_DOT){
+        // printf("dot\n");
+        array[0] = brzozowski_derivative(node->lhs,c);
+        array[1] = brzozowski_derivative(node->rhs,c);
+        array[2] = new_node(ND_DOT,array[0],node->rhs);
+        array[3] = new_node(ND_DOT,nullable_wrapper(node->lhs),array[1]);
+        return new_node(ND_OR,array[2],array[3]);
+    } else if (node->kind == ND_STAR){
+        // printf("star\n");
+        array[0] = brzozowski_derivative(node->lhs,c);
+        return new_node(ND_DOT, array[0], node);
+    } else if (node->kind == ND_ALPHA){
+        // printf("alpha\n");
+        if (node->str[0] == c){
+            return new_node(DERIV_EPSILON, NULL, NULL);
+        } else {
+            return new_node(DERIV_EMPTYSET, NULL, NULL);
+        }
+    } else if (node->kind == ND_OR){
+        printf("or\n");
+        array[0] = brzozowski_derivative(node->lhs,c);
+        array[1] = brzozowski_derivative(node->rhs,c);
+        return new_node(ND_OR,array[0],array[1]);
+    }
+}
+
+Node* nullable_wrapper(Node* node){
+    if (nullable(node)){
+        return new_node(DERIV_EPSILON, NULL, NULL);
+    } else {
+        return new_node(DERIV_EMPTYSET, NULL, NULL);
+    }
+}
+
+bool nullable(Node* node){  // 空文字列の照合関数
+    if (node->kind == DERIV_EPSILON){
+        return true;
+    } else if (node->kind == DERIV_EMPTYSET){
+        return false;
+    } else if (node->kind == ND_DOT){
+        return nullable(node->lhs) && nullable(node->rhs);
+    } else if (node->kind == ND_STAR){
+        return true;
+    } else if (node->kind == ND_ALPHA){
+        return false;
+    } 
+}
+
 int main(int argc, char** argv){    
     
     if (argc != 3){
@@ -244,12 +326,17 @@ int main(int argc, char** argv){
 
     token = tokenize(argv[1]);
     Node* node = parse_expr();
-    print_tree(node, 0);
+    // print_tree(node, 0);
 
-    char *char1 = argv[1];
-    char *char2 = argv[2];
+    // printf("\n\n");
+    char* input = argv[2];
+    for (int i = 0; input[i] != '\0'; i++) {
+        // printf("***i:%d***\n",i);
+        node = brzozowski_derivative(node, input[i]);
+        // print_tree(node, 0);
+    }
 
-    if(strcmp(char1,char2) == 0){
+    if(nullable(node)){
         return 0;
     } else {
         return 1;
