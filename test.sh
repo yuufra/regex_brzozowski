@@ -20,5 +20,6 @@ assert a a 0
 assert a b 1
 assert aa ab 1
 assert a* ab 1
+assert ab*c ab 1
 
 echo passed!!

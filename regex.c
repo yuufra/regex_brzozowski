@@ -1,3 +1,8 @@
+// *** EBNFによる文法 ***
+// expr = star ("." star)*
+// star = prim "*"?
+// prim = string
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +12,7 @@
 typedef enum {
     TK_RESERVED, // 予約された記号
     TK_ALPHA,
+    TK_DOT,  // 省略されている連結記号
     TK_EOF
 } TokenKind;
 
@@ -63,11 +69,17 @@ Token* tokenize(char* p){
         } else if (*p == '*'){
             cur = new_token(TK_RESERVED, cur, p);
             // fprintf(stderr, "p: %s\n", p);
+            if (*(p+1) != 0 && *(p+1) != '*'){
+                cur = new_token(TK_DOT, cur, p);
+            }
             p++;
             continue;
         } else if (isalpha(*p)){
             cur = new_token(TK_ALPHA, cur, p);
             // fprintf(stderr, "p: %s\n", p);
+            if (*(p+1) != 0 && *(p+1) != '*'){
+                cur = new_token(TK_DOT, cur, p);
+            }
             p++;
             continue;
         }
