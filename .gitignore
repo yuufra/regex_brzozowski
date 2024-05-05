@@ -1,0 +1,6 @@
+regex
+*.o
+*~
+tmp*
+a.out
+.vscode/
