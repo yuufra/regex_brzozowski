@@ -1,6 +1,11 @@
 CFLAGS=-std=c11 -g -static
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-regex:	regex.c
+regex:	$(OBJS)
+		$(CC) -o regex $(OBJS) $(LDFLAGS)
+
+$(OBJS): regex.h
 
 test:	regex
 		./test.sh
