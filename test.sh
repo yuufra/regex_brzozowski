@@ -29,5 +29,10 @@ assert "a|b" a 0
 assert "a|b" b 0
 assert "a|b" c 1
 assert "ab*|b*a" ab 0
+assert "(a)b" ab 0
+assert "(ab)*b" b 0
+assert "(ab)*b" abb 0
+assert "(ab)*b" ababb 0
+assert "(ab|cd)e" abe 0
 
 echo passed!!

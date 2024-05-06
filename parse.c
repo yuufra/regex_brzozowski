@@ -2,7 +2,7 @@
 // expr = or ("|" or)*
 // or = star ("." star)*
 // star = prim "*"?
-// prim = string
+// prim = string | "(" expr ")"
 
 #include "regex.h"
 
@@ -57,22 +57,22 @@ Token* tokenize(char* p){
         if (isspace(*p)){
             p++;
             continue;
-        } else if (*p == '*'){
+        } else if (*p == '*' || *p == ')'){
             cur = new_token(TK_RESERVED, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;
             continue;
-        } else if (*p == '|'){
+        } else if (*p == '|' || *p == '('){
             cur = new_token(TK_RESERVED, cur, p);
             p++;
             continue;
         } else if (isalpha(*p)){
             cur = new_token(TK_ALPHA, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;
