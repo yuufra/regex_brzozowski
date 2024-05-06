@@ -1,5 +1,6 @@
 // *** EBNFによる文法 ***
-// expr = star ("." star)*
+// expr = or ("|" or)*
+// or = star ("." star)*
 // star = prim "*"?
 // prim = string
 
@@ -7,6 +8,7 @@
 
 // 関数の宣言
 // Node* parse_expr();
+Node* parse_or();
 Node* parse_star();
 Node* parse_primary();
 
@@ -58,15 +60,19 @@ Token* tokenize(char* p){
         } else if (*p == '*'){
             cur = new_token(TK_RESERVED, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|'){
                 cur = new_token(TK_DOT, cur, p);
             }
+            p++;
+            continue;
+        } else if (*p == '|'){
+            cur = new_token(TK_RESERVED, cur, p);
             p++;
             continue;
         } else if (isalpha(*p)){
             cur = new_token(TK_ALPHA, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;
@@ -87,7 +93,8 @@ Token* tokenize(char* p){
 
 // 構文木とノードの関数
 void print_tree(Node* node, int depth){
-    fprintf(stderr, "- type:%d", node->kind);
+    char type[6][10] = {"ALPHA","DOT","STAR","OR","EMPTYSET","EPSILON"};
+    fprintf(stderr, "- type:%s", type[node->kind]);
     if (node->kind == ND_ALPHA){
         fprintf(stderr, ", str:%s\n", node->str);
     } else if (node->kind == ND_STAR){
@@ -100,7 +107,9 @@ void print_tree(Node* node, int depth){
         print_tree(node->lhs, depth+1);
         fprintf(stderr, "%*s", 2*depth, " ");
         print_tree(node->rhs, depth+1);
-    } 
+    } else if (node->kind == DERIV_EMPTYSET || node->kind == DERIV_EPSILON) {
+        fprintf(stderr, "\n");
+    }
 }
 
 Node* new_node(NodeKind kind, Node* lhs, Node* rhs){
@@ -116,12 +125,8 @@ Node* new_node(NodeKind kind, Node* lhs, Node* rhs){
         else if (lhs->kind == DERIV_EMPTYSET)
             node = new_node(DERIV_EMPTYSET, NULL, NULL);
     } else if (kind == ND_OR) {
-        if(lhs->kind == DERIV_EPSILON)
-            node = new_node(DERIV_EPSILON, NULL, NULL);
-        else if (lhs->kind == DERIV_EMPTYSET)
+        if (lhs->kind == DERIV_EMPTYSET)
             node = rhs;
-        else if(rhs->kind == DERIV_EPSILON)
-            node = new_node(DERIV_EPSILON, NULL, NULL);
         else if (rhs->kind == DERIV_EMPTYSET)
             node = lhs;
     }
@@ -137,6 +142,20 @@ Node* new_node_alpha(char* str){
 }
 
 Node* parse_expr(){
+    // fprintf(stderr, "parse_expr called\n");
+    Node* node = parse_or();
+
+    for(;;){
+        if(consume('|')){
+            node = new_node(ND_OR, node, parse_or());
+            // print_tree(node, 0);
+            continue;
+        }
+        return node;
+    }
+}
+
+Node* parse_or(){
     // fprintf(stderr, "parse_expr called\n");
     Node* node = parse_star();
 

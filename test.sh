@@ -25,5 +25,9 @@ assert ab*c ac 0
 assert ab*c ab 1
 assert ab*c abc 0
 assert ab*c abbc 0
+assert "a|b" a 0
+assert "a|b" b 0
+assert "a|b" c 1
+assert "ab*|b*a" ab 0
 
 echo passed!!

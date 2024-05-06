@@ -34,7 +34,7 @@ Node* brzozowski_derivative(Node* node, char c){
             return new_node(DERIV_EMPTYSET, NULL, NULL);
         }
     } else if (node->kind == ND_OR){
-        printf("or\n");
+        // printf("or\n");
         array[0] = brzozowski_derivative(node->lhs,c);
         array[1] = brzozowski_derivative(node->rhs,c);
         return new_node(ND_OR,array[0],array[1]);
