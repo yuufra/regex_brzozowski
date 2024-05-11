@@ -1,7 +1,7 @@
 // *** EBNFによる文法 ***
 // expr = or ("|" or)*
 // or = star ("." star)*
-// star = prim "*"?
+// star = prim ("*" | "+" | "?")?
 // prim = string | "(" expr ")"
 
 #include "regex.h"
@@ -57,10 +57,10 @@ Token* tokenize(char* p){
         if (isspace(*p)){
             p++;
             continue;
-        } else if (*p == '*' || *p == ')'){
+        } else if (*p == '*' || *p == ')' || *p == '+' || *p == '?'){
             cur = new_token(TK_RESERVED, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')' && *(p+1) != '+' && *(p+1) != '?'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;
@@ -72,7 +72,7 @@ Token* tokenize(char* p){
         } else if (isalpha(*p)){
             cur = new_token(TK_ALPHA, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')'){
+            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')' && *(p+1) != '+' && *(p+1) != '?'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;
@@ -176,6 +176,18 @@ Node* parse_star(){
     for(;;){
         if(consume('*')){
             node = new_node(ND_STAR, node, NULL);
+            // print_tree(node, 0);
+            continue;
+        } else if(consume('+')){
+            // a+はaa*に置き換えられる
+            Node *temp = new_node(ND_STAR, node, NULL);
+            node = new_node(ND_DOT, node, temp);
+            // print_tree(node, 0);
+            continue;
+        } else if(consume('?')){
+            // a?は(a|ε)に置き換えられる
+            Node *temp = new_node(DERIV_EPSILON, NULL, NULL);
+            node = new_node(ND_OR, node, temp);
             // print_tree(node, 0);
             continue;
         }
