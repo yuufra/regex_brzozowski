@@ -21,13 +21,22 @@ Node* brzozowski_derivative(Node* node, char c){
         array[1] = brzozowski_derivative(node->rhs,c);
         array[2] = new_node(ND_DOT,array[0],node->rhs);
         array[3] = new_node(ND_DOT,nullable_wrapper(node->lhs),array[1]);
-        return new_node(ND_OR,array[2],array[3]);
+        Node* ret = new_node(ND_OR,array[2],array[3]);
+        // printf("dot_result\n");
+        // print_tree(ret,0);
+        return ret;
     } else if (node->kind == ND_STAR){
         // printf("star\n");
         array[0] = brzozowski_derivative(node->lhs,c);
-        return new_node(ND_DOT, array[0], node);
+        Node* ret = new_node(ND_DOT, array[0], node);
+        // printf("star_result\n");
+        // print_tree(ret,0);
+        return ret;
     } else if (node->kind == ND_ALPHA){
         // printf("alpha\n");
+        if (node->str[0] == '.'){  // 任意の一文字を受け付ける
+            return new_node(DERIV_EPSILON, NULL, NULL);
+        } 
         if (node->str[0] == c){
             return new_node(DERIV_EPSILON, NULL, NULL);
         } else {
@@ -37,14 +46,21 @@ Node* brzozowski_derivative(Node* node, char c){
         // printf("or\n");
         array[0] = brzozowski_derivative(node->lhs,c);
         array[1] = brzozowski_derivative(node->rhs,c);
-        return new_node(ND_OR,array[0],array[1]);
+        Node* ret = new_node(ND_OR,array[0],array[1]);
+        // printf("or_result\n");
+        // print_tree(ret,0);
+        return ret;
     }
 }
 
 Node* nullable_wrapper(Node* node){
+    // printf("nennotame\n");
+    // print_tree(node,0);
     if (nullable(node)){
+        // printf("nullable:true\n");
         return new_node(DERIV_EPSILON, NULL, NULL);
     } else {
+        // printf("nullable:false\n");
         return new_node(DERIV_EMPTYSET, NULL, NULL);
     }
 }
@@ -60,5 +76,7 @@ bool nullable(Node* node){  // 空文字列の照合関数
         return true;
     } else if (node->kind == ND_ALPHA){
         return false;
+    } else if (node->kind == ND_OR){
+        return nullable(node->lhs) || nullable(node->rhs);
     } 
 }

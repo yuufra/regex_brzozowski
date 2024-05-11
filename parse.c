@@ -69,10 +69,10 @@ Token* tokenize(char* p){
             cur = new_token(TK_RESERVED, cur, p);
             p++;
             continue;
-        } else if (isalpha(*p)){
+        } else if (isalpha(*p) || *p == '.'){
             cur = new_token(TK_ALPHA, cur, p);
             // fprintf(stderr, "p: %s\n", p);
-            if (*(p+1) != 0 && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')' && *(p+1) != '+' && *(p+1) != '?'){
+            if (*(p+1) != '\0' && *(p+1) != '*' && *(p+1) != '|' && *(p+1) != ')' && *(p+1) != '+' && *(p+1) != '?'){
                 cur = new_token(TK_DOT, cur, p);
             }
             p++;

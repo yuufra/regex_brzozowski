@@ -36,8 +36,14 @@ assert "(ab)*b" ababb 0
 assert "(ab|cd)e" abe 0
 assert "a+" a 0
 assert "a+" aaa 0
+assert "a+" ab 1
 assert "ab?" a 0
 assert "ab?" ab 0
-assert "(ab|cd?)*" abcabcd 0
+assert "ab?" ac 1
+assert "(ab+|cd?)*" abcabbcd 0
+assert "." a 0
+assert ".*" abc 0
+assert "(a|.?b)+" c 1
+assert "(ab*|.?d)+" addabdc 1
 
 echo passed!!
